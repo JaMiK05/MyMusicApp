@@ -8,9 +8,7 @@ import android.net.Uri
 import android.os.*
 import android.util.Log
 import android.widget.RemoteViews
-import androidx.compose.runtime.collectAsState
 import androidx.core.app.NotificationCompat
-import androidx.core.app.ServiceCompat
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.*
 import uz.gita.music_app_jamik.*
@@ -22,6 +20,8 @@ import java.util.Random
 /**
  *   Created by Jamik on 7/15/2023 ot 3:35 PM
  **/
+private const val ONE_SEC = 1000L
+
 class MusicService : Service() {
 
     companion object {
@@ -109,12 +109,12 @@ class MusicService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if ((MyEventBus.cursor == null || MyEventBus.musicPos.value == -1))
+        if ((MyEventBus.cursor == null || MyEventBus.currentMusicPos.value == -1))
             return START_NOT_STICKY
 
         val command = intent?.extras?.getSerializable("COMMAND") as CommandEnum
         doneCommand(command)
-        createNotification(MyEventBus.cursor!!.getMusicDataByPosition(MyEventBus.musicPos.value))
+        createNotification(MyEventBus.cursor!!.getMusicDataByPosition(MyEventBus.currentMusicPos.value))
 
         return START_NOT_STICKY
     }
@@ -127,8 +127,8 @@ class MusicService : Service() {
             }
 
             CommandEnum.CONTINUE -> {
-                job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
-                musicPlayer.seekTo(MyEventBus.currentTime.value)
+                job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                musicPlayer.seekTo(MyEventBus.currentTime.value.toInt())
                 scope.launch { MyEventBus.isPlaying.emit(true) }
                 musicPlayer.start()
             }
@@ -137,11 +137,11 @@ class MusicService : Service() {
                 if (_musicPlayer == null) return
                 if (musicPlayer.isPlaying) {
                     job?.cancel()
-                    musicPlayer.seekTo(MyEventBus.currentTime.value)
-                    job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                    musicPlayer.seekTo(MyEventBus.currentTime.value.toInt())
+                    job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                 } else {
-                    musicPlayer.seekTo(MyEventBus.currentTime.value)
-                    job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                    musicPlayer.seekTo(MyEventBus.currentTime.value.toInt())
+                    job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                     job?.cancel()
                 }
             }
@@ -152,10 +152,10 @@ class MusicService : Service() {
                         if (MyEventBus.isRandom.value) {
                             randomMusic()
                         } else {
-                            if (MyEventBus.musicPos.value == 0) {
-                                MyEventBus.musicPos.value = MyEventBus.musicList.value.size - 1
+                            if (MyEventBus.currentMusicPos.value == 0) {
+                                MyEventBus.currentMusicPos.value = MyEventBus.musicList.value.size - 1
                             } else {
-                                MyEventBus.musicPos.value -= 1
+                                MyEventBus.currentMusicPos.value -= 1
                             }
                         }
                     }
@@ -169,10 +169,10 @@ class MusicService : Service() {
                     if (MyEventBus.isRandom.value) {
                         randomMusic()
                     } else {
-                        if (MyEventBus.musicPos.value == MyEventBus.musicList.value.size - 1) {
-                            MyEventBus.musicPos.value = 0
+                        if (MyEventBus.currentMusicPos.value == MyEventBus.musicList.value.size - 1) {
+                            MyEventBus.currentMusicPos.value = 0
                         } else {
-                            MyEventBus.musicPos.value += 1
+                            MyEventBus.currentMusicPos.value += 1
                         }
                     }
                 }
@@ -181,17 +181,17 @@ class MusicService : Service() {
             }
 
             CommandEnum.PLAY -> {
-                if (MyEventBus.playMusicPos == MyEventBus.musicPos.value) {
+                if (MyEventBus.playMusicPos == MyEventBus.currentMusicPos.value) {
                     job?.cancel()
-                    job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                    job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                     scope.launch { MyEventBus.isPlaying.emit(true) }
                     musicPlayer.start()
                 } else {
                     val data =
-                        MyEventBus.musicList.value[MyEventBus.musicPos.value]//cursor!!.getMusicDataByPosition(MyEventBus.musicPos.value)
+                        MyEventBus.musicList.value[MyEventBus.currentMusicPos.value]//cursor!!.getMusicDataByPosition(MyEventBus.musicPos.value)
                     scope.launch { MyEventBus.currentMusicData.emit(data) }
                     MyEventBus.currentTime.value = 0
-                    MyEventBus.musicTime.value = data.duration.toInt()
+                    MyEventBus.duration.value = data.duration
                     _musicPlayer?.stop()
                     _musicPlayer = MediaPlayer.create(this, Uri.parse(data.data))
                     try {
@@ -204,9 +204,9 @@ class MusicService : Service() {
                             }
                         }
                         musicPlayer.start()
-                        MyEventBus.playMusicPos = MyEventBus.musicPos.value
+                        MyEventBus.playMusicPos = MyEventBus.currentMusicPos.value
                         job?.cancel()
-                        job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }
+                        job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }
                             .launchIn(scope)
                         scope.launch { MyEventBus.isPlaying.emit(true) }
                     } catch (e: Exception) {
@@ -222,19 +222,19 @@ class MusicService : Service() {
             CommandEnum.Speed -> {
                 var speed = 0f
                 when (MyEventBus.speed.value) {
-                    SpeedEnum.Sekin -> {
+                    SpeedEnum.SLOW -> {
                         speed = 0.5f
                     }
 
-                    SpeedEnum.Ortacha -> {
+                    SpeedEnum.NORMAL -> {
                         speed = 1f
                     }
 
-                    SpeedEnum.Tez -> {
+                    SpeedEnum.FAST -> {
                         speed = 1.5f
                     }
 
-                    SpeedEnum.JudaTez -> {
+                    SpeedEnum.VERY_FAST -> {
                         speed = 2f
                     }
                 }
@@ -247,20 +247,20 @@ class MusicService : Service() {
                     playbackParams.speed = speed
                     musicPlayer.playbackParams = playbackParams
                     musicPlayer.start()
-                    job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                    job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                 } else {
                     val playbackParams = PlaybackParams()
                     playbackParams.speed = speed
                     musicPlayer.playbackParams = playbackParams
                     musicPlayer.pause()
-                    job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
+                    job = produceCurrentTime().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                     job?.cancel()
                 }
             }
 
             CommandEnum.PAUSE -> {
                 musicPlayer.pause()
-                musicPlayer.seekTo(MyEventBus.currentTime.value)
+                musicPlayer.seekTo(MyEventBus.currentTime.value.toInt())
                 job?.cancel()
                 scope.launch { MyEventBus.isPlaying.emit(false) }
             }
@@ -285,18 +285,18 @@ class MusicService : Service() {
     private fun randomMusic() {
         val random = Random()
         val randomNumber = random.nextInt(MyEventBus.musicList.value.size)
-        if (randomNumber == MyEventBus.musicPos.value && MyEventBus.musicList.value.size > 10) {
+        if (randomNumber == MyEventBus.currentMusicPos.value && MyEventBus.musicList.value.size > 10) {
             randomMusic()
         }
-        MyEventBus.musicPos.value = randomNumber
+        MyEventBus.currentMusicPos.value = randomNumber
     }
 
-    private fun moveProgress(): Flow<Int> = flow {
-        val myStep = MyEventBus.speed.value.emitInt
-        for (i in MyEventBus.currentTime.value until MyEventBus.musicTime.value step 1000) {
-            Log.d("TTT", myStep.toString())
-            emit(i)
-            delay(MyEventBus.speed.value.speed)
+    private fun produceCurrentTime(): Flow<Long> = flow {
+        var currentTime = 0L
+        while(currentTime < MyEventBus.duration.value) {
+            currentTime += MyEventBus.speed.value.speed
+            emit(currentTime)
+            delay(ONE_SEC)
         }
     }
 

@@ -1,7 +1,5 @@
 package uz.gita.music_app_jamik.presentation.splash
 
-import android.util.Log
-import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.*
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -9,7 +7,6 @@ import kotlinx.coroutines.*
 import uz.gita.music_app_jamik.domain.AppRepository
 import uz.gita.music_app_jamik.util.MyEventBus
 import uz.gita.music_app_jamik.util.getMusicCursor
-import uz.gita.music_app_jamik.util.getMusicDataByPosition
 import javax.inject.Inject
 
 /**
@@ -41,7 +38,7 @@ class SplashViewModel @Inject constructor(
 
                 if (MyEventBus.listSize > 0) {
                     MyEventBus.currentMusicData.value = MyEventBus.musicList.value[0]
-                    MyEventBus.musicPos.value = 0
+                    MyEventBus.currentMusicPos.value = 0
                 }
 
                 viewModelScope.launch {

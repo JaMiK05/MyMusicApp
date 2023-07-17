@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.*
 import cafe.adriel.voyager.androidx.AndroidScreen
 import cafe.adriel.voyager.hilt.getViewModel
 import io.github.ningyuv.circularseekbar.CircularSeekbarView
+import kotlinx.coroutines.flow.filterNotNull
 import uz.gita.music_app_jamik.R
 import uz.gita.music_app_jamik.data.model.*
 import uz.gita.music_app_jamik.ui.componenta.*
@@ -48,9 +49,9 @@ class PlayScreen : AndroidScreen() {
     ) {
         val cn = LocalContext.current
 
-        val index = remember { MyEventBus.musicPos }
+        val index = remember { MyEventBus.currentMusicPos }
 
-        val firstListState = rememberLazyListState(MyEventBus.musicPos.collectAsState().value)
+        val firstListState = rememberLazyListState(MyEventBus.currentMusicPos.collectAsState().value)
         LaunchedEffect(index.collectAsState().value) {
             firstListState.animateScrollToItem(index = index.value)
         }
@@ -70,8 +71,8 @@ class PlayScreen : AndroidScreen() {
 
         val musicData = MyEventBus.currentMusicData.collectAsState()
 
-        if (MyEventBus.currentTime.collectAsState().value != 0) {
-            val milliseconds = MyEventBus.currentTime.collectAsState().value.toLong()
+        if (MyEventBus.currentTime.collectAsState().value != 0L) {
+            val milliseconds = MyEventBus.currentTime.collectAsState().value
             val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
             val minutes = (milliseconds / 1000 / 60) % 60
             val seconds = (milliseconds / 1000) % 60
@@ -79,8 +80,8 @@ class PlayScreen : AndroidScreen() {
             else "%02d:%02d:%02d".format(hours, minutes, seconds)
         }
 
-        if (MyEventBus.musicTime.collectAsState().value != 0) {
-            val milliseconds = MyEventBus.musicTime.collectAsState().value.toLong()
+        if (MyEventBus.duration.collectAsState().value != 0L) {
+            val milliseconds = MyEventBus.duration.collectAsState().value
             val hours = TimeUnit.MILLISECONDS.toHours(milliseconds)
             val minutes = (milliseconds / 1000 / 60) % 60
             val seconds = (milliseconds / 1000) % 60
@@ -299,7 +300,7 @@ class PlayScreen : AndroidScreen() {
             ) {
                 itemsIndexed(nn.value) {index, item ->
                     PlayMusicItem(musicData = item, index = index) {
-                        MyEventBus.musicPos.value = index
+                        MyEventBus.currentMusicPos.value = index
                         MyEventBus.currentTime.value = 0
                         startMusicService(cn, CommandEnum.PLAY)
                     }
@@ -323,7 +324,7 @@ class PlayScreen : AndroidScreen() {
                 Slider(
                     value = sekbarstate.value.toFloat(),
                     onValueChange = { newValue ->
-                        sekbarValue = newValue.toInt()
+                        sekbarValue = newValue.toLong()
                         MyEventBus.currentTime.value = sekbarValue
                     },
                     onValueChangeFinished = {
@@ -505,7 +506,7 @@ class PlayScreen : AndroidScreen() {
                             Spacer(modifier = Modifier.weight(0.2f))
 
                             ItemsBtn(text = "0.5x", size = 30.dp, onClick = {
-                                MyEventBus.speed.value = SpeedEnum.Sekin
+                                MyEventBus.speed.value = SpeedEnum.SLOW
                                 startMusicService(cn, CommandEnum.Speed)
                                 musicScore = false
                             })
@@ -513,7 +514,7 @@ class PlayScreen : AndroidScreen() {
                             Spacer(modifier = Modifier.weight(0.2f))
 
                             ItemsBtn(text = "1x", size = 30.dp, onClick = {
-                                MyEventBus.speed.value = SpeedEnum.Ortacha
+                                MyEventBus.speed.value = SpeedEnum.NORMAL
                                 startMusicService(cn, CommandEnum.Speed)
                                 musicScore = false
                             })
@@ -521,14 +522,14 @@ class PlayScreen : AndroidScreen() {
                             Spacer(modifier = Modifier.weight(0.2f))
 
                             ItemsBtn(text = "1.5x", size = 30.dp, onClick = {
-                                MyEventBus.speed.value = SpeedEnum.Tez
+                                MyEventBus.speed.value = SpeedEnum.FAST
                                 startMusicService(cn, CommandEnum.Speed)
                                 musicScore = false
                             })
 
                             Spacer(modifier = Modifier.weight(0.2f))
                             ItemsBtn(text = "2x", size = 30.dp, onClick = {
-                                MyEventBus.speed.value = SpeedEnum.JudaTez
+                                MyEventBus.speed.value = SpeedEnum.VERY_FAST
                                 startMusicService(cn, CommandEnum.Speed)
                                 musicScore = false
                             })

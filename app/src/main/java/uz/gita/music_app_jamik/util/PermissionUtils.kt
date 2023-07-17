@@ -38,9 +38,9 @@ fun Context.checkPermision(array: List<String>, blockSuccess: () -> Unit) {
         }).check()
 }
 
-private fun moveProgress(): Flow<Int> = flow {
+private fun produceCurrentTime(): Flow<Int> = flow {
 
-    for (i in MyEventBus.currentTime.value until MyEventBus.musicTime.value step MyEventBus.speed.value.emitInt) {
+    for (i in MyEventBus.currentTime.value until MyEventBus.duration.value step MyEventBus.speed.value.value) {
         emit(i)
         delay(MyEventBus.speed.value.speed)
         Log.d("speed", i.toString())

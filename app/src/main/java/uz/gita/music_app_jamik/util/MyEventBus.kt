@@ -10,13 +10,13 @@ import uz.gita.music_app_jamik.data.model.SpeedEnum
  **/
 object MyEventBus {
 
-    var musicPos = MutableStateFlow(-1)
+    var currentMusicPos = MutableStateFlow(0)
 
     var playMusicPos: Int = -1
 
-    var musicTime = MutableStateFlow(0)
+    var duration = MutableStateFlow(0L)
 
-    var currentTime = MutableStateFlow(0)
+    var currentTime = MutableStateFlow(0L)
 
     var listSize: Int = 0
 
@@ -24,7 +24,7 @@ object MyEventBus {
 
     var musicList = MutableStateFlow<ArrayList<MusicData>>(arrayListOf())
 
-    val speed = MutableStateFlow(SpeedEnum.Ortacha)
+    val speed = MutableStateFlow(SpeedEnum.NORMAL)
 
     var isPlaying = MutableStateFlow(false)
 
