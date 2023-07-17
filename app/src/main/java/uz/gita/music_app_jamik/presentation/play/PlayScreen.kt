@@ -293,7 +293,7 @@ class PlayScreen : AndroidScreen() {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(330.dp)
+                    .height(350.dp)
                     .padding(horizontal = 18.dp)
             ) {
                 for (i in 0 until MyEventBus.cursor!!.count) {
