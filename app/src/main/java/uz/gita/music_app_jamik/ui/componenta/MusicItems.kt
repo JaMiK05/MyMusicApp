@@ -64,11 +64,11 @@ fun PlayMusicItem(
             .height(50.dp)
             .padding(vertical = 2.dp)
             .padding(start = 5.dp)
-            .combinedClickable(onLongClick = { onLongClick?.invoke(musicData) }, onClick = {}),
+            .combinedClickable(onClick = { onLongClick?.invoke(musicData) }),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
-            modifier = Modifier.width(25.dp),
+            modifier = Modifier.width(35.dp),
             text = "${index+1}",
             color = textColor,
             textAlign = TextAlign.Center,

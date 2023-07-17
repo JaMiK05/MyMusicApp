@@ -76,7 +76,7 @@ class MusicService : Service() {
     }
 
     private fun createRemoteView(music: MusicData): RemoteViews {
-        val view = RemoteViews(this.packageName, R.layout.remote_views)
+        val view = RemoteViews(this.packageName, R.layout.remote_view)
         view.setTextViewText(R.id.musicname, music.title)
         view.setTextViewText(R.id.musicowner, music.artist)
         if (music.albumArt != null)
@@ -99,7 +99,7 @@ class MusicService : Service() {
 
     private fun createPendingIntent(command: CommandEnum): PendingIntent {
         val intent = Intent(this, MusicService::class.java)
-        intent.putExtra("Command", command)
+        intent.putExtra("COMMAND", command)
         return PendingIntent.getService(
             this,
             command.amount,
@@ -109,12 +109,12 @@ class MusicService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if ((MyEventBus.cursor == null || MyEventBus.musicPos == -1))
+        if ((MyEventBus.cursor == null || MyEventBus.musicPos.value == -1))
             return START_NOT_STICKY
 
         val command = intent?.extras?.getSerializable("COMMAND") as CommandEnum
         doneCommand(command)
-        createNotification(MyEventBus.cursor!!.getMusicDataByPosition(MyEventBus.musicPos))
+        createNotification(MyEventBus.cursor!!.getMusicDataByPosition(MyEventBus.musicPos.value))
 
         return START_NOT_STICKY
     }
@@ -152,10 +152,10 @@ class MusicService : Service() {
                         if (MyEventBus.isRandom.value) {
                             randomMusic()
                         } else {
-                            if (MyEventBus.musicPos == 0) {
-                                MyEventBus.musicPos = MyEventBus.cursor!!.count - 1
+                            if (MyEventBus.musicPos.value == 0) {
+                                MyEventBus.musicPos.value = MyEventBus.musicList.value.size - 1
                             } else {
-                                MyEventBus.musicPos -= 1
+                                MyEventBus.musicPos.value -= 1
                             }
                         }
                     }
@@ -169,10 +169,10 @@ class MusicService : Service() {
                     if (MyEventBus.isRandom.value) {
                         randomMusic()
                     } else {
-                        if (MyEventBus.musicPos == MyEventBus.cursor!!.count - 1) {
-                            MyEventBus.musicPos = 0
+                        if (MyEventBus.musicPos.value == MyEventBus.musicList.value.size - 1) {
+                            MyEventBus.musicPos.value = 0
                         } else {
-                            MyEventBus.musicPos += 1
+                            MyEventBus.musicPos.value += 1
                         }
                     }
                 }
@@ -181,14 +181,14 @@ class MusicService : Service() {
             }
 
             CommandEnum.PLAY -> {
-
-                if (MyEventBus.playMusicPos == MyEventBus.musicPos) {
+                if (MyEventBus.playMusicPos == MyEventBus.musicPos.value) {
                     job?.cancel()
                     job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }.launchIn(scope)
                     scope.launch { MyEventBus.isPlaying.emit(true) }
                     musicPlayer.start()
                 } else {
-                    val data = MyEventBus.cursor!!.getMusicDataByPosition(MyEventBus.musicPos)
+                    val data =
+                        MyEventBus.musicList.value[MyEventBus.musicPos.value]//cursor!!.getMusicDataByPosition(MyEventBus.musicPos.value)
                     scope.launch { MyEventBus.currentMusicData.emit(data) }
                     MyEventBus.currentTime.value = 0
                     MyEventBus.musicTime.value = data.duration.toInt()
@@ -204,7 +204,7 @@ class MusicService : Service() {
                             }
                         }
                         musicPlayer.start()
-                        MyEventBus.playMusicPos = MyEventBus.musicPos
+                        MyEventBus.playMusicPos = MyEventBus.musicPos.value
                         job?.cancel()
                         job = moveProgress().onEach { MyEventBus.currentTime.emit(it) }
                             .launchIn(scope)
@@ -269,8 +269,7 @@ class MusicService : Service() {
                 musicPlayer.pause()
                 job?.cancel()
                 scope.launch { MyEventBus.isPlaying.emit(false) }
-                //stopSelf()
-                ServiceCompat.stopForeground(this, ServiceCompat.STOP_FOREGROUND_REMOVE)
+                stopSelf()
             }
 
             CommandEnum.IS_REPEATED -> {
@@ -285,18 +284,19 @@ class MusicService : Service() {
 
     private fun randomMusic() {
         val random = Random()
-        val randomNumber = random.nextInt(MyEventBus.cursor!!.count) // 0 dan 99 gacha tasodifiy son
-        if (randomNumber == MyEventBus.musicPos && MyEventBus.cursor!!.count > 10) {
+        val randomNumber = random.nextInt(MyEventBus.musicList.value.size)
+        if (randomNumber == MyEventBus.musicPos.value && MyEventBus.musicList.value.size > 10) {
             randomMusic()
         }
-        MyEventBus.musicPos = randomNumber
+        MyEventBus.musicPos.value = randomNumber
     }
 
     private fun moveProgress(): Flow<Int> = flow {
+        val myStep = MyEventBus.speed.value.emitInt
         for (i in MyEventBus.currentTime.value until MyEventBus.musicTime.value step 1000) {
+            Log.d("TTT", myStep.toString())
             emit(i)
             delay(MyEventBus.speed.value.speed)
-            Log.d("speed", MyEventBus.speed.value.speed.toString())
         }
     }
 

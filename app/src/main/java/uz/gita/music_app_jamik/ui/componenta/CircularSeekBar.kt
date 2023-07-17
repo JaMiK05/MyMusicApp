@@ -38,7 +38,6 @@ fun CircularSeekBar(
     inActiveColor: Color = Color.Gray,
     dotColor: Color = Color.Black,
 ) {
-    Log.d("TTT", "circular ${value.toFloat() / steps.toFloat()}")
     Box(
         modifier = Modifier.size(size + 5.dp),
         contentAlignment = Alignment.Center

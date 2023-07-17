@@ -33,7 +33,7 @@ fun Context.getMusicCursor(): Flow<Cursor> = flow {
 fun Cursor.getMusicDataByPosition(pos: Int): MusicData {
     this.moveToPosition(pos)
 
-    var albumArt: Bitmap? = null
+    var albumArt: Bitmap?
     try {
         val mmr = MediaMetadataRetriever()
 

@@ -4,11 +4,15 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.util.Log
 import com.karumi.dexter.Dexter
 import com.karumi.dexter.MultiplePermissionsReport
 import com.karumi.dexter.PermissionToken
 import com.karumi.dexter.listener.PermissionRequest
 import com.karumi.dexter.listener.multi.MultiplePermissionsListener
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 
 fun Context.checkPermision(array: List<String>, blockSuccess: () -> Unit) {
     Dexter.withContext(this).withPermissions(array)
@@ -32,4 +36,13 @@ fun Context.checkPermision(array: List<String>, blockSuccess: () -> Unit) {
                 startActivity(intent)
             }
         }).check()
+}
+
+private fun moveProgress(): Flow<Int> = flow {
+
+    for (i in MyEventBus.currentTime.value until MyEventBus.musicTime.value step MyEventBus.speed.value.emitInt) {
+        emit(i)
+        delay(MyEventBus.speed.value.speed)
+        Log.d("speed", i.toString())
+    }
 }

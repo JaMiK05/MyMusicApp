@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/containernotif"
+    android:orientation="vertical">
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:orientation="horizontal"
+        android:layout_height="wrap_content">
+        <ImageView
+            android:id="@+id/musicphoto"
+            android:layout_width="60dp"
+            android:layout_height="60dp"
+            android:padding="4dp"
+            android:scaleType="centerCrop"
+            tools:src="@drawable/remote_disk"/>
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:orientation="vertical"
+            android:layout_height="wrap_content">
+            <TextView
+                android:id="@+id/musicname"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Sample music name"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:layout_marginTop="8dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textColor="@color/black"
+                android:textSize="16sp" />
+
+            <TextView
+                android:id="@+id/musicowner"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                tools:text="Sample artist name"
+                android:layout_marginTop="8dp"
+                android:layout_marginLeft="8dp"
+                android:layout_marginRight="8dp"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:textSize="14sp" />
+
+        </LinearLayout>
+
+
+    </LinearLayout>
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <ImageView
+            android:id="@+id/musicprev"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/remote_pev"
+            />
+
+        <ImageView
+            android:id="@+id/playOrPause"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_marginLeft="12dp"
+            android:layout_marginRight="12dp"
+            android:rotationY="180"
+            android:src="@drawable/remote_pause"
+            android:rotation="180"
+            />
+
+        <ImageView
+            android:id="@+id/musicnext"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/remote_next"
+            />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"/>
+
+
+        <ImageView
+            android:id="@+id/musiccancel"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_gravity="center"
+            android:src="@drawable/remote_cancel"
+            android:padding="4dp"
+            />
+
+    </LinearLayout>
+
+</LinearLayout>
+

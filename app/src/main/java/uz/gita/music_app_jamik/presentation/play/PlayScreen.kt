@@ -1,16 +1,14 @@
 package uz.gita.music_app_jamik.presentation.play
 
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.media.AudioManager
 import android.net.Uri
 import android.widget.Toast
 import androidx.annotation.DrawableRes
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.*
@@ -19,23 +17,17 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.*
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.*
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.*
 import cafe.adriel.voyager.androidx.AndroidScreen
 import cafe.adriel.voyager.hilt.getViewModel
 import io.github.ningyuv.circularseekbar.CircularSeekbarView
 import uz.gita.music_app_jamik.R
-import uz.gita.music_app_jamik.data.model.CommandEnum
-import uz.gita.music_app_jamik.data.model.SpeedEnum
-import uz.gita.music_app_jamik.ui.componenta.CircularSeekBar
-import uz.gita.music_app_jamik.ui.componenta.PlayMusicItem
-import uz.gita.music_app_jamik.util.MyEventBus
-import uz.gita.music_app_jamik.util.getMusicDataByPosition
-import uz.gita.music_app_jamik.util.setVolume
-import uz.gita.music_app_jamik.util.startMusicService
+import uz.gita.music_app_jamik.data.model.*
+import uz.gita.music_app_jamik.ui.componenta.*
+import uz.gita.music_app_jamik.util.*
 import java.util.concurrent.TimeUnit
-
 
 /**
  *   Created by Jamik on 7/15/2023 ot 2:03 PM
@@ -56,7 +48,14 @@ class PlayScreen : AndroidScreen() {
     ) {
         val cn = LocalContext.current
 
-        if (MyEventBus.message.collectAsState().value.isNotEmpty()){
+        val index = remember { MyEventBus.musicPos }
+
+        val firstListState = rememberLazyListState(MyEventBus.musicPos.collectAsState().value)
+        LaunchedEffect(index.collectAsState().value) {
+            firstListState.animateScrollToItem(index = index.value)
+        }
+
+        if (MyEventBus.message.collectAsState().value.isNotEmpty()) {
             Toast.makeText(cn, MyEventBus.message.collectAsState().value, Toast.LENGTH_SHORT).show()
         }
 
@@ -290,26 +289,21 @@ class PlayScreen : AndroidScreen() {
                 )
             }
 
+            val nn = MyEventBus.musicList.collectAsState()
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(350.dp)
-                    .padding(horizontal = 18.dp)
+                    .padding(horizontal = 18.dp),
+                state = firstListState
             ) {
-                for (i in 0 until MyEventBus.cursor!!.count) {
-                    item {
-                        PlayMusicItem(
-                            musicData = MyEventBus.cursor!!.getMusicDataByPosition(i),
-                            index = i,
-                            onLongClick = {
-                                MyEventBus.musicPos = i
-                                startMusicService(cn, CommandEnum.PLAY)
-                            }
-                        )
-
+                itemsIndexed(nn.value) {index, item ->
+                    PlayMusicItem(musicData = item, index = index) {
+                        MyEventBus.musicPos.value = index
+                        MyEventBus.currentTime.value = 0
+                        startMusicService(cn, CommandEnum.PLAY)
                     }
                 }
-
             }
 
             Row(
@@ -392,7 +386,8 @@ class PlayScreen : AndroidScreen() {
                         value = currentVolume,
                         onChangeListener = {
                             musicScore = false
-                            setVolume(it, cn) }
+                            setVolume(it, cn)
+                        }
                     )
 
                     Spacer(
@@ -414,7 +409,8 @@ class PlayScreen : AndroidScreen() {
                             size = 40.dp,
                             onClick = {
                                 startMusicService(cn, CommandEnum.PREV)
-                            musicScore = false
+                                musicScore = false
+                                MyEventBus.currentTime.value = 0
                             })
                         Spacer(modifier = Modifier.width(40.dp))
                         if (MyEventBus.isPlaying.collectAsState().value) {
@@ -423,7 +419,7 @@ class PlayScreen : AndroidScreen() {
                                 size = 50.dp,
                                 onClick = {
                                     startMusicService(cn, CommandEnum.PAUSE)
-                                musicScore = false
+                                    musicScore = false
                                 })
                         } else {
                             ItemsBtn(
@@ -431,7 +427,7 @@ class PlayScreen : AndroidScreen() {
                                 size = 50.dp,
                                 onClick = {
                                     startMusicService(cn, CommandEnum.PLAY)
-                                musicScore = false
+                                    musicScore = false
                                 })
                         }
                         Spacer(modifier = Modifier.width(40.dp))
@@ -441,7 +437,8 @@ class PlayScreen : AndroidScreen() {
                             size = 40.dp,
                             onClick = {
                                 startMusicService(cn, CommandEnum.NEXT)
-                            musicScore = false
+                                musicScore = false
+                                MyEventBus.currentTime.value = 0
                             })
                     }
                 }
@@ -452,24 +449,13 @@ class PlayScreen : AndroidScreen() {
                         .padding(start = 25.dp)
                 ) {
                     Spacer(modifier = Modifier.weight(0.5f))
-//                    if (MyEventBus.isRepeated.collectAsState().value) {
-//                        ItemsBtn(
-//                            pic = R.drawable.norepeat,
-//                            size = 40.dp,
-//                            onClick = { MyEventBus.isRepeated.value = false })
-//                    } else {
-//                        ItemsBtn(
-//                            pic = R.drawable.repeat,
-//                            size = 40.dp,
-//                            onClick = { MyEventBus.isRepeated.value = true })
-//                    }
 
                     ItemsBtn(
                         text = "EQ",
                         size = 40.dp,
                         onClick = {
-                            musicScore = false 
-                        /* MyEventBus.isRepeated.value = true*/
+                            musicScore = false
+                            /* MyEventBus.isRepeated.value = true*/
                         })
 
                     Spacer(modifier = Modifier.weight(4f))
@@ -480,7 +466,7 @@ class PlayScreen : AndroidScreen() {
                             size = 40.dp,
                             onClick = {
                                 MyEventBus.isRepeated.value = false
-                            musicScore = false
+                                musicScore = false
                             })
                     } else {
                         ItemsBtn(
@@ -488,7 +474,7 @@ class PlayScreen : AndroidScreen() {
                             size = 40.dp,
                             onClick = {
                                 MyEventBus.isRepeated.value = true
-                            musicScore = false
+                                musicScore = false
                             })
                     }
                     Spacer(modifier = Modifier.weight(3f))
@@ -557,14 +543,15 @@ class PlayScreen : AndroidScreen() {
                                 size = 40.dp,
                                 onClick = {
                                     MyEventBus.isRandom.value = false
-                                    musicScore = false })
+                                    musicScore = false
+                                })
                         } else {
                             ItemsBtn(
                                 pic = R.drawable.random,
                                 size = 40.dp,
                                 onClick = {
                                     MyEventBus.isRandom.value = true
-                                musicScore = false
+                                    musicScore = false
                                 })
                         }
                         Spacer(modifier = Modifier.weight(3f))
